@@ -28,6 +28,11 @@ def parse_arguments():
         action='store_true',
         help="Add this argument if you want to download only audio"
     )
+    parser.add_argument(
+        '--resolution',
+        type=str,
+        help="Resolution of downloaded video. Default is the highest resolution of video"
+    )
     return parser.parse_args()
 
 
@@ -50,14 +55,19 @@ def replace_whitespaces(text):
 
 
 def download_video(url):
-    global mp3, output_path
+    global mp3, output_path, resolution
 
     yt = YouTube(url)
     filename = yt.title
-    max_res = yt.streams.get_highest_resolution().resolution
-    min_res = yt.streams.get_lowest_resolution().resolution
 
-    stream = yt.streams.filter(file_extension='mp4').get_by_resolution(min_res if mp3 else max_res)
+    max_res = resolution if resolution else yt.streams.get_highest_resolution().resolution
+    min_res = resolution if resolution else yt.streams.get_lowest_resolution().resolution
+    res = min_res if mp3 else max_res
+
+    stream = yt.streams.filter(file_extension='mp4', res=res).first()
+    assert (
+        stream is not None
+    ), f"There is no video '{filename}' with resolution {resolution}"
 
     video_path = Path(stream.download(output_path))
 
@@ -77,6 +87,7 @@ if __name__ == "__main__":
     args = parse_arguments()
     mp3 = args.mp3
     output_path = args.output_dir
+    resolution = args.resolution
 
     check_arguments(args.urls_file, args.output_dir)
 
