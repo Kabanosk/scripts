@@ -1,8 +1,6 @@
 import argparse
-import time
 from pathlib import Path
 import concurrent.futures
-from pprint import pprint
 
 from pytube import YouTube
 
@@ -12,7 +10,6 @@ def parse_arguments():
     parser.add_argument(
         '--urls_file', '-f',
         type=Path,
-        required=True,
         help="File with urls (.txt format)"
     )
     parser.add_argument(
@@ -21,17 +18,22 @@ def parse_arguments():
         default=Path('.'),
         help="Directory in which videos will be downloaded"
     )
+    parser.add_argument(
+        '--url', '-u',
+        type=str,
+        help="Url address to video which will be downloaded"
+    )
     return parser.parse_args()
 
 
 def check_arguments(file, output_dir):
     assert (
-        file.exists()
+        file is None or file.exists()
     ), f"Path '{file}' not exists"
     assert (
-            file.suffix == '.txt'
+        file is None or file.suffix == '.txt'
     ), f"File '{file}' is in wrong format (must be .txt)"
-    if not output_dir.exists():
+    if output_dir is not None and not output_dir.exists():
         output_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -59,11 +61,15 @@ if __name__ == "__main__":
 
     check_arguments(args.urls_file, args.output_dir)
 
-    with open(args.urls_file, 'r') as f:
-        urls = [replace_whitespaces(x) for x in f.readlines()]
+    if args.url:
+        download_video(args.url)
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = executor.map(download_video, urls)
+    if output_path and args.urls_file:
+        with open(args.urls_file, 'r') as f:
+            urls = [replace_whitespaces(x) for x in f.readlines()]
 
-        for result in results:
-            print("Downloaded", result)
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            results = executor.map(download_video, urls)
+
+            for result in results:
+                print(result)
