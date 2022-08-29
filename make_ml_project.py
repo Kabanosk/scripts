@@ -98,8 +98,8 @@ if __name__ == '__main__':
 
     make_folders(base_dir)
     make_files(base_dir)
-
-    initialize_git(base_dir, args.github_url)
+    if not args.without_git:
+        initialize_git(base_dir, args.github_url)
 
 
 
